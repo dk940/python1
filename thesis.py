@@ -1,55 +1,61 @@
 import pandas as pd
-import requests
-import os
 
-# 1. 设置文件路径 - 匹配你文件夹里实际的文件名
-template_file = "Ultimate_Regression_Dataset_Template.xlsx"
-data_file = "interventions.csv"
-output_file = "Updated_Thesis_Data.xlsx"
+# 读取你现有的数据集（请根据你的实际路径调整文件名）
+file_path = 'Ultimate_Regression_Dataset_Template.xlsx'
+df = pd.read_excel(file_path)
 
-print("🚀 开始处理毕业论文数据...")
+# 所有 Sheet 都需要保留的基础列（国家标识和因变量）
+base_cols = ['Country_Name', 'ISO3_Code', 'Region', 'Y_Initial_Tariff_Threat', 'Y_Final_Implemented_Tariff']
 
-# 2. 读取你的初始模板 (注意：这里改成了 read_excel 来读取 .xlsx 文件)
-if os.path.exists(template_file):
-    try:
-        # 你的模板是 Excel 格式，所以必须用 read_excel
-        df = pd.read_excel(template_file)
-        print(f"✅ 已加载模板，共 {len(df)} 行数据。")
-    except Exception as e:
-        print(f"❌ 读取 Excel 失败！错误信息: {e}")
-        print("💡 提示：请确保你在 PyCharm 终端输入过 pip install openpyxl")
-        exit()
-else:
-    print(f"❌ 找不到模板文件: {template_file}")
-    # 打印当前文件夹下的所有文件，帮你排查问题
-    print(f"💡 当前文件夹里的文件有: {os.listdir('.')}")
-    exit()
+# 定义 6 大框架及包含的列名（包含已有列和将要抓取的新列）
+frameworks = {
+    '1_经济利益框架': [
+        'X_Econ_Export_Dep_US_Pct', 'X_Econ_Export_HHI',
+        'X_Econ_Trade_Surplus_Scale', 'X_Econ_HS_Code_Category',
+        'X_Econ_US_Tariff_Share', 'X_Econ_Currency_Manipulator'
+    ],
+    '2_地缘政治框架': [
+        'X_Pol_US_Military_Bases', 'X_Pol_Alliance_Level', 'X_Pol_UN_Voting_Align',
+        'X_Pol_Distance_to_US_km', 'X_Pol_Ideology_Score', 'X_Cult_Starbucks_McD_Count',
+        'X_Pol_NATO_US_Ally', 'X_Pol_Strategic_Competitor'
+    ],
+    '3_供应链竞争框架': [
+        'X_Econ_Export_Dep_CN_Pct', 'X_Econ_HighTech_Dep_US', 'X_Econ_Foreign_Value_Added',
+        'X_Econ_Critical_Minerals', 'X_Pol_Entity_List_Count',
+        'X_Supply_China_Ind_Link', 'X_Supply_RCEP_BRI', 'X_Supply_Domestic_Value_Added',
+        'X_Supply_Critical_Minerals_to_CN'
+    ],
+    '4_国内政治经济框架': [
+        'X_Negot_Lobbying_US_Mil', 'X_Negot_Retaliation_Level',
+        'X_Dom_Retaliation_Agri_Auto', 'X_Dom_Swing_State_Impact'
+    ],
+    '5_制度合规框架': [
+        'X_Inst_IP_Protection', 'X_Inst_WTO_Member_Sued', 'X_Inst_Bilateral_FTA',
+        'X_Inst_Non_Market_Economy', 'X_Inst_Additional_Clauses'
+    ],
+    '6_谈判行为框架': [
+        'X_Negot_Purchase_Commit_Bil', 'X_Negot_FDI_to_US_Bil', 'X_Negot_Signed_Framework',
+        'X_Negot_Attitude_Score', 'X_Negot_Struct_Reform_Accept'
+    ]
+}
 
-# 3. 从 World Bank API 获取宏观数据
-def get_wb_data(indicator, column_name):
-    print(f"🌐 正在获取世界银行指标: {indicator}...")
-    url = f"http://api.worldbank.org/v2/country/all/indicator/{indicator}?format=json&date=2023&per_page=300"
-    try:
-        response = requests.get(url)
-        raw_data = response.json()[1]
-        val_map = {item['countryiso3code']: item['value'] for item in raw_data if item['value'] is not None}
-        df[column_name] = df['ISO3_Code'].map(val_map)
-        print(f"   已填充 {column_name} 变量。")
-    except Exception as e:
-        print(f"   ⚠️ 获取 {indicator} 失败。")
+# 创建并写入包含多个 Sheet 的 Excel 文件
+output_file = 'Structured_Regression_Dataset.xlsx'
+with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
+    for sheet_name, cols in frameworks.items():
+        # 筛选出原数据中已有的列
+        existing_cols = [c for c in cols if c in df.columns]
+        # 找出需要留空的新增列
+        new_cols = [c for c in cols if c not in df.columns]
 
-# 填充：贸易占GDP比重
-get_wb_data("NE.TRD.GNFS.ZS", "X_Econ_Export_Dep_US_Pct")
+        # 创建新的 DataFrame 面板
+        sheet_df = df[base_cols + existing_cols].copy()
 
-# 4. 整合你已有的 interventions.csv 数据 (这个是 CSV，所以用 read_csv)
-if os.path.exists(data_file):
-    print(f"📊 正在从 {data_file} 提取干预措施计数...")
-    inter_df = pd.read_csv(data_file)
-    # 统计每个国家出现的次数
-    counts = inter_df['Implementing Jurisdiction'].value_counts()
-    df['X_Negot_Retaliation_Level'] = df['Country_Name'].map(counts).fillna(0)
-    print("   已根据干预记录填充反制烈度分值。")
+        # 添加新的空列等待后续爬虫填充
+        for c in new_cols:
+            sheet_df[c] = None
 
-# 5. 保存结果为新的 Excel
-df.to_excel(output_file, index=False)
-print(f"\n🎉 处理完成！请查看文件夹里的：{output_file}")
+        # 写入对应 Sheet
+        sheet_df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+print(f"数据结构已成功分类并保存至 {output_file}")
