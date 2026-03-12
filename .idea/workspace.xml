@@ -4,17 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1ea5f9da-6a28-4999-85df-a8f7c1796003" name="更改" comment="">
-      <change afterPath="$PROJECT_DIR$/step2.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Thesis_Data_Filled_Master.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Thesis_Data_Filled_v3.xlsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Thesis_Data_Filled_v3_Master.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Thesis_Final_Dataset_v3.xlsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Ultimate_Regression_Dataset_Template.xlsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/thesis.py" beforeDir="false" afterPath="$PROJECT_DIR$/thesis.py" afterDir="false" />
-    </list>
+    <list default="true" id="1ea5f9da-6a28-4999-85df-a8f7c1796003" name="更改" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
