@@ -1,228 +1,250 @@
 """
-Step 1 (更新版): 构建 Y 变量 — 关税变化幅度
-═══════════════════════════════════════════════════════════════
-新的Y变量设计：
-
-  Y = 2026年2月最终税率  -  川普上任前税率（2024年）
-    = 关税"净增幅"
-
-逻辑：
-  - 所有国家起点不同（有些原本就有贸易摩擦，税率较高）
-  - 你的X变量解释的是：为什么有些国家被加征得更多？
-  - 这比单看最终税率更干净，控制了"原本税率"的基线差异
-
-数据来源：
-  Pre-Trump:  World Bank API — TM.TAX.MRCH.WM.AR.ZS
-              （美国对各国进口的加权平均适用税率，用2023年数据）
-  Post-Trump: 白宫 Annex I (2025-04-02) 宣布税率
-              （Y_Final = Liberation Day宣布值，口径统一）
-
-中国处理：
-  Pre-Trump中国已有约20%+关税（301条款叠加）
-  Post-Trump = 34%（Annex I口径，不用145%保持口径一致）
-  Y_China_Flag = 1 标注，稳健性检验时单独处理
-
-═══════════════════════════════════════════════════════════════
+=============================================================================
+thesis_data_api_day1.py  ·  API 抓取：美国双边贸易逆差数据（更新 final.xlsx）
+=============================================================================
+任务：
+1. 抓取美国对样本国 2023 年进口额 / 出口额
+2. 计算 F1_Surplus_B = US_imp_B_2023 - US_exp_B_2023
+3. 将原始结果写入 raw_inputs
+4. 仅将 F1_Surplus_B 回填到 主数据集
+=============================================================================
 """
 
+import time
 import requests
 import pandas as pd
-import time
+from pathlib import Path
+from datetime import datetime
 
-# ─── 样本国家 ───────────────────────────────────────────────
-SAMPLE_COUNTRIES = [
-    "AFG", "ALB", "DZA", "AGO", "ARG", "ARM", "AUS", "AUT", "AZE", "BGD",
-    "BLR", "BEL", "BOL", "BRA", "BGR", "KHM", "CAN", "CHL", "CHN", "COL",
-    "COD", "CRI", "HRV", "CZE", "DNK", "DOM", "ECU", "EGY", "SLV", "ETH",
-    "FIN", "FRA", "GEO", "DEU", "GHA", "GRC", "GTM", "HND", "HKG", "HUN",
-    "IND", "IDN", "IRN", "IRL", "ISR", "ITA", "JPN", "JOR", "KAZ", "KEN",
-    "KOR", "KWT", "LAO", "LBN", "LTU", "LUX", "MYS", "MLT", "MEX", "MDA",
-    "MNG", "MAR", "MOZ", "MMR", "NPL", "NLD", "NZL", "NGA", "NOR", "OMN",
-    "PAK", "PAN", "PRY", "PER", "PHL", "POL", "PRT", "QAT", "ROU", "RUS",
-    "SAU", "SEN", "SRB", "SGP", "SVK", "SVN", "ZAF", "ESP", "LKA", "SWE",
-    "CHE", "TWN", "TZA", "THA", "TUN", "TUR", "UGA", "UKR", "ARE", "GBR",
-    "URY", "UZB", "VEN", "VNM", "ZMB", "ZWE",
+# ============================================================
+# 0. 配置区
+# ============================================================
+BASE = Path(r"E:\Desk\thesis")
+INTER = BASE / "outputintermediate"
+FINAL = BASE / "outputfinal"
+INTER.mkdir(parents=True, exist_ok=True)
+
+WORKBOOK = FINAL / "final.xlsx"
+CACHE_FILE = INTER / "ct_us_bilateral_cache_day1.csv"
+
+COMTRADE_KEY = "b9e34bf4f2c041c79db8d3a05799162b"
+COMTRADE_BASE = "https://comtradeapi.un.org/data/v1/get/C/A/HS"
+
+YEAR = "2023"
+SOURCE_TAG = f"UN Comtrade DAY1 {YEAR}"
+
+# ============================================================
+# 1. 读取工作簿
+# ============================================================
+if not WORKBOOK.exists():
+    raise FileNotFoundError(f"找不到工作簿: {WORKBOOK}")
+
+sheets = pd.read_excel(WORKBOOK, sheet_name=None)
+
+if "主数据集" not in sheets:
+    raise ValueError("final.xlsx 缺少 sheet：主数据集")
+
+df_main = sheets["主数据集"].copy()
+df_codebook = sheets.get("变量说明", pd.DataFrame())
+df_todo = sheets.get("数据收集清单", pd.DataFrame())
+df_raw = sheets.get("raw_inputs", pd.DataFrame())
+
+required_cols = ["iso3"]
+for col in required_cols:
+    if col not in df_main.columns:
+        raise ValueError(f"主数据集缺少必要列: {col}")
+
+if "F1_Surplus_B" not in df_main.columns:
+    df_main["F1_Surplus_B"] = pd.NA
+
+# 如果 raw_inputs 不存在或为空，初始化
+raw_required_cols = [
+    "iso3", "source_task", "year",
+    "US_imp_B_2023", "US_exp_B_2023", "F1_Surplus_B",
+    "source", "updated_at", "note"
 ]
+if df_raw.empty:
+    df_raw = pd.DataFrame(columns=raw_required_cols)
+else:
+    for col in raw_required_cols:
+        if col not in df_raw.columns:
+            df_raw[col] = pd.NA
 
-# ─── Post-Trump: 白宫 Annex I (2025-04-02) ────────────────
-# 未在Annex I列出 → 10%基准
-ANNEX_I_RATES = {
-    # 东南亚
-    "KHM": 49, "LAO": 48, "VNM": 46, "MMR": 44, "LKA": 44, "BGD": 37,
-    "THA": 36, "IDN": 32, "MYS": 24, "PHL": 17, "SGP": 10,
-    # 东亚
-    "CHN": 34, "TWN": 32, "JPN": 24, "KOR": 25, "HKG": 34,
-    # 南亚
-    "IND": 26, "PAK": 29,
-    # 欧盟（统一20%）
-    "DEU": 20, "FRA": 20, "ITA": 20, "ESP": 20, "NLD": 20, "BEL": 20,
-    "POL": 20, "SWE": 20, "DNK": 20, "FIN": 20, "AUT": 20, "PRT": 20,
-    "GRC": 20, "IRL": 20, "HUN": 20, "CZE": 20, "ROU": 20, "BGR": 20,
-    "HRV": 20, "SVK": 20, "SVN": 20, "LTU": 20, "LUX": 20, "MLT": 20,
-    # 非EU欧洲
-    "CHE": 31, "NOR": 15, "SRB": 37, "MDA": 31, "GBR": 10,
-    # 北美
-    "CAN": 25, "MEX": 25,
-    # 中东/北非
-    "ISR": 17, "JOR": 20, "IRN": 10, "DZA": 30, "TUN": 28,
-    # 非洲
-    "ZAF": 30, "NGA": 14, "AGO": 32, "ZWE": 18, "ZMB": 17, "MOZ": 16,
-    # 拉美
-    "VEN": 15, "BOL": 20, "NIC": 18,
-    # 中亚
-    "KAZ": 27,
+print(f"✅ 已读取工作簿: {WORKBOOK.name}")
+print(f"   主数据集样本数: {len(df_main)}")
+
+# ============================================================
+# 2. Comtrade 国家代码映射
+# ============================================================
+CT_CODE = {
+    "LSO":426,"KHM":116,"LAO":418,"MDG":450,"VNM":704,"LKA":144,"MMR":104,"MUS":480,
+    "IRQ":368,"GUY":328,"BGD":50,"BWA":72,"SRB":688,"THA":764,"HND":340,"CHN":156,
+    "TWN":490,"IDN":360,"AGO":24,"CHE":756,"LBY":434,"MDA":498,"ZAF":710,"DZA":12,
+    "PAK":586,"TUN":788,"KAZ":398,"IND":356,"KOR":410,"JPN":392,"MYS":458,"NAM":516,
+    "CIV":384,"DEU":276,"FRA":251,"ITA":381,"ESP":724,"NLD":528,"BEL":56,"POL":616,
+    "SWE":752,"AUT":40,"DNK":208,"FIN":246,"IRL":372,"PRT":620,"GRC":300,"CZE":203,
+    "HUN":348,"ROU":642,"SVK":703,"BGR":100,"HRV":191,"JOR":400,"ZWE":716,"RWA":646,
+    "NIC":558,"ISR":376,"PHL":608,"MWI":454,"ZMB":894,"MOZ":508,"TZA":834,"NOR":578,
+    "VEN":862,"NGA":566,"CMR":120,"COD":180
 }
 
-# ─── Pre-Trump: World Bank API 抓取（替代WITS）────────────
-# 指标: TM.TAX.MRCH.WM.AR.ZS
-# = Tariff rate, applied, weighted mean, all products (%)
-# 这是美国对各国进口的实际适用关税加权均值
-# 来源: World Bank / ITC / UNCTAD / WTO 联合数据库，免费无需Key
-print("=" * 60)
-print("Step 1: 构建 Y 变量（关税变化幅度）")
-print("=" * 60)
-print("\n[1/2] 抓取 Pre-Trump 关税基准（World Bank API）...")
-
-WB_BASE = "https://api.worldbank.org/v2"
-
-
-def fetch_wb_tariff(year=2023):
-    """
-    抓取美国对各国的加权平均适用关税税率
-    指标: TM.TAX.MRCH.WM.AR.ZS（以进口方为reporter）
-    注意：此指标是"各国自身的进口关税"，不是美国对他们的税率
-
-    所以我们改用：NY.GDP.MKTP.CD等配合手动MFN数据
-    Pre-Trump美国MFN关税普遍很低（加权均值约1.5-3.5%）
-    直接用固定值更准确，见下方 PRE_TRUMP_MFN
-    """
-    url = (f"{WB_BASE}/country/all/indicator/TM.TAX.MRCH.WM.AR.ZS"
-           f"?format=json&date={year}&per_page=300&mrv=1")
+# ============================================================
+# 3. API 请求函数
+# ============================================================
+def fetch_flow(partner_code: int, flow_code: str, year: str = "2023"):
+    headers = {"Ocp-Apim-Subscription-Key": COMTRADE_KEY}
+    params = {
+        "reporterCode": 842,          # USA
+        "partnerCode": partner_code,
+        "period": year,
+        "cmdCode": "TOTAL",
+        "flowCode": flow_code,        # M / X
+        "maxRecords": 500,
+        "format": "JSON",
+        "breakdownMode": "classic",
+        "includeDesc": "false"
+    }
     try:
-        r = requests.get(url, timeout=20)
-        r.raise_for_status()
-        data = r.json()
-        result = {}
-        if data and len(data) > 1 and data[1]:
-            for row in data[1]:
-                iso3 = row.get("countryiso3code", "")
-                val = row.get("value")
-                if iso3 and val is not None:
-                    result[iso3] = round(float(val), 2)
-        return result
+        r = requests.get(COMTRADE_BASE, params=params, headers=headers, timeout=25)
+        if r.status_code == 200:
+            recs = r.json().get("data", [])
+            return sum(x.get("primaryValue", 0) or 0 for x in recs)
+
+        if r.status_code == 429:
+            print("   ⏳ 触发 429，休眠 65 秒后重试...")
+            time.sleep(65)
+            return fetch_flow(partner_code, flow_code, year)
+
+        print(f"   ⚠️ HTTP {r.status_code}")
+        return None
+
     except Exception as e:
-        print(f"  ⚠ World Bank API: {e}")
-        return {}
+        print(f"   ⚠️ 请求异常: {e}")
+        return None
 
 
-wb_tariff = fetch_wb_tariff(2023)
-print(f"  ✓ 获取到 {len(wb_tariff)} 个国家的关税数据")
+def get_us_bilateral_trade(partner_code: int, year: str = "2023"):
+    us_imp = fetch_flow(partner_code, "M", year)
+    time.sleep(1.5)
+    us_exp = fetch_flow(partner_code, "X", year)
+    time.sleep(1.5)
+    return us_imp, us_exp
 
-# ─── Pre-Trump 美国对各国MFN关税（手动补充）────────────────
-# 说明：上面的WB指标是各国自己的进口税率，不是美国对他们的
-# 美国在川普前对大多数国家MFN关税加权均值约1.5-3.5%
-# 以下是基于WTO/USITC数据的近似值（2024年水平）
-# 特殊情况：中国因301条款已叠加25%额外关税，实际约20-25%
-PRE_TRUMP_US_TARIFF = {
-    # 正常MFN（约1.5-3.5%）
-    "AUS": 1.8, "NZL": 1.8, "GBR": 2.0, "CAN": 0.5, "MEX": 0.5,  # FTA/USMCA
-    "JPN": 2.1, "KOR": 2.1, "DEU": 2.0, "FRA": 2.0, "ITA": 2.0,
-    "ESP": 2.0, "NLD": 2.0, "BEL": 2.0, "SWE": 2.0, "DNK": 2.0,
-    "FIN": 2.0, "AUT": 2.0, "PRT": 2.0, "GRC": 2.0, "IRL": 2.0,
-    "HUN": 2.0, "CZE": 2.0, "POL": 2.0, "ROU": 2.0, "BGR": 2.0,
-    "HRV": 2.0, "SVK": 2.0, "SVN": 2.0, "LTU": 2.0, "LUX": 2.0,
-    "MLT": 2.0, "CHE": 2.3, "NOR": 2.1, "ISR": 0.5,  # FTA
-    "SGP": 0.5, "CHL": 0.5, "COL": 0.5, "PER": 0.5, "PAN": 0.5,
-    "DOM": 0.5, "SLV": 0.5, "GTM": 0.5, "HND": 0.5, "CRI": 0.5,
-    "NIC": 2.1, "BHR": 0.5, "OMN": 0.5, "JOR": 0.5,  # FTA
-    "MAR": 0.5,  # FTA
-    # 正常MFN无FTA（约2-3.5%）
-    "BRA": 2.5, "ARG": 2.5, "BOL": 2.8, "ECU": 2.8, "VEN": 2.8,
-    "PRY": 2.8, "URY": 2.5, "COD": 2.5, "ETH": 2.5, "GHA": 2.5,
-    "KEN": 2.5, "NGA": 2.5, "ZAF": 2.5, "TZA": 2.5, "SEN": 2.5,
-    "UGA": 2.5, "ZMB": 2.5, "ZWE": 2.5, "MOZ": 2.5, "AGO": 2.5,
-    "EGY": 2.8, "DZA": 2.8, "TUN": 2.8, "MAR": 0.5,
-    "TUR": 2.5, "SAU": 2.8, "ARE": 2.8, "KWT": 2.8, "QAT": 2.8,
-    "IRQ": 2.8, "LBN": 2.8, "JOR": 0.5,
-    "IND": 2.5, "PAK": 2.8, "BGD": 3.0, "NPL": 3.0, "LKA": 3.0,
-    "THA": 2.5, "IDN": 2.8, "MYS": 2.5, "PHL": 2.5, "VNM": 2.8,
-    "KHM": 3.0, "MMR": 3.0, "LAO": 3.0, "SGP": 0.5, "BRN": 2.5,
-    "HKG": 0.5,  # 香港自由港
-    "TWN": 2.3, "KOR": 2.1, "JPN": 2.1,
-    "AZE": 2.8, "GEO": 2.8, "ARM": 2.8, "KAZ": 2.8, "UZB": 2.8,
-    "MNG": 2.8, "UKR": 2.5, "BLR": 3.0, "ROU": 2.0, "MDA": 2.5,
-    "SRB": 2.5, "ALB": 2.5, "MKD": 2.5, "KGZ": 2.8,
-    "IRN": 3.5,  # 制裁影响
-    "RUS": 3.0,  # 2022年后已大幅提高，但MFN层面约3%
-    # 中国：特殊 — 已有301条款叠加关税，实际约20%+
-    "CHN": 20.0,
-}
+# ============================================================
+# 4. 加载缓存（断点续传）
+# ============================================================
+if CACHE_FILE.exists():
+    df_cache = pd.read_csv(CACHE_FILE)
+    results = df_cache.to_dict("records")
+    done_isos = set(df_cache["iso3"].astype(str).tolist())
+    print(f"✅ 已加载缓存，已完成 {len(done_isos)} 个国家")
+else:
+    results = []
+    done_isos = set()
 
-# ─── 构建完整数据框 ──────────────────────────────────────────
-print("\n[2/2] 构建Y变量数据框...")
+# ============================================================
+# 5. 批量抓取
+# ============================================================
+print("\n🌐 开始抓取 DAY1：美国双边进出口数据")
 
-rows = []
-for iso3 in SAMPLE_COUNTRIES:
-    # Post-Trump税率（Liberation Day, 4月2日）
-    post_rate = ANNEX_I_RATES.get(iso3, 10)  # 未列出 = 10%基准
+for iso3 in df_main["iso3"].dropna().astype(str):
+    if iso3 in done_isos:
+        continue
 
-    # Pre-Trump税率（2024年底/川普上任前）
-    pre_rate = PRE_TRUMP_US_TARIFF.get(iso3, 2.5)  # 未知 = MFN均值2.5%
+    ct_code = CT_CODE.get(iso3)
+    if not ct_code:
+        print(f"   ⏭️ {iso3}: 缺少 Comtrade code，跳过")
+        continue
 
-    # Y = 关税净增幅
-    y_change = round(post_rate - pre_rate, 2)
+    print(f"   🔄 {iso3} ...", end=" ")
+    us_imp, us_exp = get_us_bilateral_trade(ct_code, YEAR)
 
-    # 中国标注
-    china_flag = 1 if iso3 == "CHN" else 0
+    if us_imp is None or us_exp is None:
+        print("❌ 失败")
+        continue
 
-    # 额外说明
-    if iso3 == "CHN":
-        note = "Pre=~20% (301 tariffs); Post=34% (Annex I); actual final ~145%"
-    elif iso3 in ANNEX_I_RATES:
-        note = "In Annex I"
-    else:
-        note = "10% baseline (not in Annex I)"
+    imp_b = round(us_imp / 1e9, 4)
+    exp_b = round(us_exp / 1e9, 4)
+    surplus_b = round(imp_b - exp_b, 4)
 
-    rows.append({
-        "ISO3": iso3,
-        "Y_Pre_Trump": pre_rate,  # 川普前税率
-        "Y_Post_AnnexI": post_rate,  # 4月2日宣布税率
-        "Y_Change": y_change,  # ★ 主Y变量 = 净增幅
-        "Y_ExtraTariff": post_rate - 10,  # 备用Y = 超出10%基准部分
-        "Y_China_Flag": china_flag,
-        "Note": note,
-    })
+    row = {
+        "iso3": iso3,
+        "source_task": "DAY1_US_bilateral_trade",
+        "year": int(YEAR),
+        "US_imp_B_2023": imp_b,
+        "US_exp_B_2023": exp_b,
+        "F1_Surplus_B": surplus_b,
+        "source": SOURCE_TAG,
+        "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "note": ""
+    }
+    results.append(row)
 
-df = pd.DataFrame(rows)
+    pd.DataFrame(results).to_csv(CACHE_FILE, index=False)
 
-# ─── 统计报告 ────────────────────────────────────────────────
-print(f"\n{'=' * 60}")
-print(f"Y变量统计")
-print(f"{'=' * 60}")
-print(f"\n样本量: {len(df)} 个国家")
-print(f"\n【主Y变量: Y_Change = Post税率 - Pre税率】")
-print(df["Y_Change"].describe().round(2))
+    print(f"✅ imp={imp_b:.2f}B exp={exp_b:.2f}B surplus={surplus_b:.2f}B")
 
-print(f"\n增幅最大10国（被加征最多）:")
-top10 = df.nlargest(10, "Y_Change")[["ISO3", "Y_Pre_Trump", "Y_Post_AnnexI", "Y_Change"]]
-print(top10.to_string(index=False))
+# ============================================================
+# 6. 整理 DAY1 结果
+# ============================================================
+df_day1 = pd.DataFrame(results)
 
-print(f"\n⚠️  中国特殊情况:")
-chn = df[df["ISO3"] == "CHN"].iloc[0]
-print(f"   Pre-Trump: ~{chn.Y_Pre_Trump}% (含301条款关税)")
-print(f"   Post Annex I: {chn.Y_Post_AnnexI}%（口径统一，不用145%）")
-print(f"   Y_Change = {chn.Y_Change}%")
-print(f"   稳健性检验时用 Y_China_Flag=1 排除中国")
+if df_day1.empty:
+    print("\n⚠️ 本次没有抓到新结果，停止写回。")
+    raise SystemExit
 
-# ─── 保存 ────────────────────────────────────────────────────
-df.to_csv("step1_Y_complete.csv", index=False, encoding="utf-8-sig")
-print(f"\n✅ 保存 → step1_Y_complete.csv")
-print(f"""
-📌 你的审查清单:
-   1. 打开 step1_Y_complete.csv
-   2. Y_Change 检查: 东南亚国家应该增幅最大（KHM约46%）
-   3. 中国 Y_Change ≈ 14%（34-20，因为原本就有301关税）
-   4. 欧盟国家 Y_Change ≈ 18%（20-2）
-   5. 有FTA的国家增幅较小（以色列、约旦约16-17%）
-   6. 如果你认为中国Pre-Trump应该用更高/低的值，直接改CSV
-""")
+# 去重：同一 iso3 保留最后一次
+df_day1 = df_day1.drop_duplicates(subset=["iso3"], keep="last").copy()
+
+# ============================================================
+# 7. 更新 raw_inputs
+# ============================================================
+# 先删除已有同任务旧记录，再追加新记录
+if not df_raw.empty and "source_task" in df_raw.columns:
+    df_raw = df_raw[df_raw["source_task"] != "DAY1_US_bilateral_trade"].copy()
+
+df_raw_updated = pd.concat([df_raw, df_day1], ignore_index=True)
+
+# ============================================================
+# 8. 回填 主数据集（只更新 F1_Surplus_B）
+# ============================================================
+surplus_map = dict(zip(df_day1["iso3"], df_day1["F1_Surplus_B"]))
+
+df_main["F1_Surplus_B"] = df_main["iso3"].map(surplus_map).combine_first(df_main["F1_Surplus_B"])
+
+# ============================================================
+# 9. 可选：更新 数据收集清单
+# ============================================================
+if not df_todo.empty:
+    possible_name_cols = [c for c in df_todo.columns if "变量" in str(c) or "var" in str(c).lower()]
+    possible_status_cols = [c for c in df_todo.columns if "状态" in str(c) or "status" in str(c).lower()]
+    possible_note_cols = [c for c in df_todo.columns if "备注" in str(c) or "note" in str(c).lower()]
+
+    if possible_name_cols and possible_status_cols:
+        name_col = possible_name_cols[0]
+        status_col = possible_status_cols[0]
+        note_col = possible_note_cols[0] if possible_note_cols else None
+
+        mask = df_todo[name_col].astype(str).str.strip().eq("F1_Surplus_B")
+        if mask.any():
+            df_todo.loc[mask, status_col] = "已完成"
+            if note_col:
+                df_todo.loc[mask, note_col] = f"{SOURCE_TAG} 已抓取并回填"
+
+# ============================================================
+# 10. 写回 final.xlsx（保留全部 sheet）
+# ============================================================
+with pd.ExcelWriter(WORKBOOK, engine="openpyxl", mode="w") as writer:
+    df_main.to_excel(writer, sheet_name="主数据集", index=False)
+
+    if not df_codebook.empty:
+        df_codebook.to_excel(writer, sheet_name="变量说明", index=False)
+
+    if not df_todo.empty:
+        df_todo.to_excel(writer, sheet_name="数据收集清单", index=False)
+
+    df_raw_updated.to_excel(writer, sheet_name="raw_inputs", index=False)
+
+print(f"\n🎉 DAY1 完成，已写回: {WORKBOOK}")
+print("   raw_inputs 已新增 US_imp_B_2023 / US_exp_B_2023 / F1_Surplus_B")
+print("   主数据集 已回填 F1_Surplus_B")

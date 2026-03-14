@@ -1,0 +1,69 @@
+iso3,country_name,initial_rate,region,china_flag,note
+LSO,Lesotho,50,Africa,0,
+KHM,Cambodia,49,Asia,0,
+LAO,Laos,48,Asia,0,
+MDG,Madagascar,47,Africa,0,
+VNM,Vietnam,46,Asia,0,
+LKA,Sri Lanka,44,Asia,0,
+MMR,Myanmar,44,Asia,0,
+MUS,Mauritius,40,Africa,0,
+IRQ,Iraq,39,MiddleEast,0,
+GUY,Guyana,38,Americas,0,
+BGD,Bangladesh,37,Asia,0,
+BWA,Botswana,37,Africa,0,
+SRB,Serbia,37,Europe,0,
+THA,Thailand,36,Asia,0,
+HND,Honduras,35,Americas,0,
+CHN,China,34,Asia,1,fentanyl IEEPA另计+20%
+TWN,Taiwan,32,Asia,0,
+IDN,Indonesia,32,Asia,0,
+AGO,Angola,32,Africa,0,
+CHE,Switzerland,31,Europe,0,
+LBY,Libya,31,MiddleEast,0,
+MDA,Moldova,31,Europe,0,
+ZAF,South Africa,30,Africa,0,
+DZA,Algeria,30,Africa,0,
+PAK,Pakistan,29,Asia,0,
+TUN,Tunisia,28,Africa,0,
+KAZ,Kazakhstan,27,Asia,0,
+IND,India,26,Asia,0,
+KOR,South Korea,25,Asia,0,
+JPN,Japan,24,Asia,0,
+MYS,Malaysia,24,Asia,0,
+NAM,Namibia,21,Africa,0,
+CIV,Ivory Coast,21,Africa,0,
+DEU,Germany,20,Europe,0,EU member
+FRA,France,20,Europe,0,EU member
+ITA,Italy,20,Europe,0,EU member
+ESP,Spain,20,Europe,0,EU member
+NLD,Netherlands,20,Europe,0,EU member
+BEL,Belgium,20,Europe,0,EU member
+POL,Poland,20,Europe,0,EU member
+SWE,Sweden,20,Europe,0,EU member
+AUT,Austria,20,Europe,0,EU member
+DNK,Denmark,20,Europe,0,EU member
+FIN,Finland,20,Europe,0,EU member
+IRL,Ireland,20,Europe,0,EU member
+PRT,Portugal,20,Europe,0,EU member
+GRC,Greece,20,Europe,0,EU member
+CZE,Czech Rep.,20,Europe,0,EU member
+HUN,Hungary,20,Europe,0,EU member
+ROU,Romania,20,Europe,0,EU member
+SVK,Slovakia,20,Europe,0,EU member
+BGR,Bulgaria,20,Europe,0,EU member
+HRV,Croatia,20,Europe,0,EU member
+JOR,Jordan,20,MiddleEast,0,
+ZWE,Zimbabwe,18,Africa,0,
+RWA,Rwanda,18,Africa,0,
+NIC,Nicaragua,18,Americas,0,
+ISR,Israel,17,MiddleEast,0,
+PHL,Philippines,17,Asia,0,
+MWI,Malawi,17,Africa,0,
+ZMB,Zambia,17,Africa,0,
+MOZ,Mozambique,16,Africa,0,
+TZA,Tanzania,16,Africa,0,
+NOR,Norway,15,Europe,0,
+VEN,Venezuela,15,Americas,0,
+NGA,Nigeria,14,Africa,0,
+CMR,Cameroon,11,Africa,0,
+COD,DR Congo,11,Africa,0,

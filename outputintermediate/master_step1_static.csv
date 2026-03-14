@@ -1,0 +1,69 @@
+iso3,country_name,initial_rate,region,china_flag,note,Y,F1_FX_Watch,F2_Ally,F2_Rival,F2_Dist,F2_Bases,F3_BRI,F3_RCEP,F4_301,F4_Retaliate,F4_Stance,Y2_Deal
+LSO,Lesotho,50,Africa,0,,50.0,0,0,0,13179.4,0,1,0,0,0,2,0
+KHM,Cambodia,49,Asia,0,,49.0,0,0,0,14398.6,0,1,1,0,0,2,0
+LAO,Laos,48,Asia,0,,48.0,0,0,0,13690.5,0,1,1,0,0,2,0
+MDG,Madagascar,47,Africa,0,,47.0,0,0,0,14278.9,0,1,0,0,0,2,0
+VNM,Vietnam,46,Asia,0,,46.0,1,0,0,13343.6,0,1,1,1,0,3,1
+LKA,Sri Lanka,44,Asia,0,,44.0,0,0,0,14388.3,0,1,0,0,0,2,0
+MMR,Myanmar,44,Asia,0,,44.0,0,0,0,13449.9,0,1,1,0,0,2,0
+MUS,Mauritius,40,Africa,0,,40.0,0,0,0,15209.9,0,0,0,0,0,2,0
+IRQ,Iraq,39,MiddleEast,0,,39.0,0,0,0,9968.5,0,1,0,0,0,2,0
+GUY,Guyana,38,Americas,0,,38.0,0,0,0,4041.5,0,0,0,0,0,2,0
+BGD,Bangladesh,37,Asia,0,,37.0,0,0,0,12929.7,0,1,0,0,0,3,1
+BWA,Botswana,37,Africa,0,,37.0,0,0,0,12771.9,0,1,0,0,0,2,0
+SRB,Serbia,37,Europe,0,,37.0,0,0,0,7589.4,0,1,0,0,0,2,0
+THA,Thailand,36,Asia,0,,36.0,0,0,0,14154.4,0,1,1,1,0,3,1
+HND,Honduras,35,Americas,0,,35.0,0,0,0,2933.4,0,0,0,0,0,2,0
+CHN,China,34,Asia,1,fentanyl IEEPA另计+20%,34.0,1,0,1,11145.2,0,1,1,1,1,1,0
+TWN,Taiwan,32,Asia,0,,32.0,1,0,0,12645.9,0,0,0,0,0,3,1
+IDN,Indonesia,32,Asia,0,,32.0,0,0,0,16358.4,0,1,1,1,0,3,1
+AGO,Angola,32,Africa,0,,32.0,0,0,0,10647.2,0,1,0,0,0,2,0
+CHE,Switzerland,31,Europe,0,,31.0,0,0,0,6597.9,0,0,0,0,0,2,1
+LBY,Libya,31,MiddleEast,0,,31.0,0,0,0,7808.3,0,1,0,0,0,2,0
+MDA,Moldova,31,Europe,0,,31.0,0,0,0,7972.1,0,1,0,0,0,2,0
+ZAF,South Africa,30,Africa,0,,30.0,0,0,0,13030.3,0,1,0,0,0,3,0
+DZA,Algeria,30,Africa,0,,30.0,0,0,0,6796.5,0,1,0,1,0,2,0
+PAK,Pakistan,29,Asia,0,,29.0,0,0,0,11371.3,0,1,0,1,0,2,0
+TUN,Tunisia,28,Africa,0,,28.0,0,0,0,7338.7,0,1,0,1,0,2,0
+KAZ,Kazakhstan,27,Asia,0,,27.0,0,0,0,9539.1,0,1,0,1,0,2,0
+IND,India,26,Asia,0,,26.0,0,0,0,12046.2,0,0,0,1,0,2,1
+KOR,South Korea,25,Asia,0,,25.0,1,1,0,11163.4,28,0,1,0,0,3,1
+JPN,Japan,24,Asia,0,,24.0,1,1,0,10903.4,120,0,1,0,0,3,1
+MYS,Malaysia,24,Asia,0,,24.0,1,0,0,15337.8,0,1,1,1,0,3,1
+NAM,Namibia,21,Africa,0,,21.0,0,0,0,11899.0,0,1,0,0,0,2,0
+CIV,Ivory Coast,21,Africa,0,,21.0,0,0,0,7956.1,0,1,0,0,0,2,0
+DEU,Germany,20,Europe,0,EU member,20.0,1,1,0,6709.9,119,0,0,0,1,2,1
+FRA,France,20,Europe,0,EU member,20.0,0,1,0,6164.9,0,0,0,0,1,2,1
+ITA,Italy,20,Europe,0,EU member,20.0,0,1,0,7215.7,14,1,0,0,1,2,1
+ESP,Spain,20,Europe,0,EU member,20.0,0,1,0,6088.3,0,0,0,0,1,2,1
+NLD,Netherlands,20,Europe,0,EU member,20.0,0,1,0,6189.5,0,0,0,0,1,2,1
+BEL,Belgium,20,Europe,0,EU member,20.0,0,1,0,6215.8,1,0,0,0,1,2,1
+POL,Poland,20,Europe,0,EU member,20.0,0,1,0,7177.5,1,0,0,0,1,2,1
+SWE,Sweden,20,Europe,0,EU member,20.0,0,1,0,6635.8,0,0,0,0,1,2,1
+AUT,Austria,20,Europe,0,EU member,20.0,0,1,0,7122.9,0,0,0,0,1,2,1
+DNK,Denmark,20,Europe,0,EU member,20.0,0,1,0,6510.7,0,0,0,0,1,2,1
+FIN,Finland,20,Europe,0,EU member,20.0,0,1,0,6929.3,0,0,0,0,1,2,1
+IRL,Ireland,20,Europe,0,EU member,20.0,0,1,0,5443.2,0,0,0,0,1,2,1
+PRT,Portugal,20,Europe,0,EU member,20.0,0,1,0,5736.3,0,1,0,0,1,2,1
+GRC,Greece,20,Europe,0,EU member,20.0,0,1,0,8253.1,2,1,0,0,1,2,1
+CZE,Czech Rep.,20,Europe,0,EU member,20.0,0,1,0,6900.7,0,0,0,0,1,2,1
+HUN,Hungary,20,Europe,0,EU member,20.0,0,1,0,7334.9,0,1,0,0,1,2,1
+ROU,Romania,20,Europe,0,EU member,20.0,0,1,0,7976.2,0,0,0,0,1,2,1
+SVK,Slovakia,20,Europe,0,EU member,20.0,0,1,0,7173.6,0,0,0,0,1,2,1
+BGR,Bulgaria,20,Europe,0,EU member,20.0,0,1,0,7912.0,0,0,0,0,1,2,1
+HRV,Croatia,20,Europe,0,EU member,20.0,0,1,0,7233.5,0,0,0,0,1,2,1
+JOR,Jordan,20,MiddleEast,0,,20.0,0,0,0,9531.1,0,1,0,0,0,3,0
+ZWE,Zimbabwe,18,Africa,0,,18.0,0,0,0,12785.1,0,1,0,0,0,2,0
+RWA,Rwanda,18,Africa,0,,18.0,0,0,0,11616.7,0,1,0,0,0,2,0
+NIC,Nicaragua,18,Americas,0,,18.0,0,0,1,3114.3,0,1,0,1,0,2,0
+ISR,Israel,17,MiddleEast,0,,17.0,0,1,0,9497.3,1,0,0,0,0,3,1
+PHL,Philippines,17,Asia,0,,17.0,0,0,0,13777.4,0,1,1,0,0,3,1
+MWI,Malawi,17,Africa,0,,17.0,0,0,0,12769.8,0,1,0,0,0,2,0
+ZMB,Zambia,17,Africa,0,,17.0,0,0,0,12388.4,0,1,0,0,0,2,0
+MOZ,Mozambique,16,Africa,0,,16.0,0,0,0,13415.6,0,1,0,0,0,2,0
+TZA,Tanzania,16,Africa,0,,16.0,0,0,0,12401.8,0,1,0,0,0,2,0
+NOR,Norway,15,Europe,0,,15.0,0,1,0,6232.3,1,0,0,0,1,2,1
+VEN,Venezuela,15,Americas,0,,15.0,0,0,1,3317.9,0,1,0,1,0,2,0
+NGA,Nigeria,14,Africa,0,,14.0,0,0,0,8906.6,0,1,0,1,0,2,0
+CMR,Cameroon,11,Africa,0,,11.0,0,0,0,9612.7,0,1,0,0,0,2,0
+COD,DR Congo,11,Africa,0,,11.0,0,0,0,10512.8,0,1,0,0,0,2,0
